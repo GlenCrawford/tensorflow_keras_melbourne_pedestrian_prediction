@@ -38,14 +38,23 @@ def load_dataset():
 
 # Print what a single batch looks like.
 def show_dataset(dataset):
-  print('Example dataset batch:')
   for features, labels in dataset.take(1):
     for feature, values in features.items():
       print("{:9s}: {}".format(feature, values.numpy()))
     print('Labels:   ' + str(labels))
 
-input_dataset = load_dataset()
-show_dataset(input_dataset)
+# Helper function to build a tf.data Dataset. Do this so we can pipe data through the feature columns in the preprocessing layer of the model.
+def build_dataset_from_dictionary(data):
+  data_frame = pd.DataFrame(data)
+  labels = data_frame.pop('labels')
+  dataset = tf.data.Dataset.from_tensor_slices((dict(data_frame), labels))
+  dataset = dataset.batch(BATCH_SIZE)
+  return dataset
+
+train_dataset = load_dataset()
+
+print('Example train dataset batch:')
+show_dataset(train_dataset)
 
 ### Data preprocessing ###
 # Instead of preprocessing the data before training the model, we're going to take advantage of the tf.feature_column API to preprocess *inside* the model. This means that we can pass raw data directly into the model.
@@ -61,7 +70,7 @@ def normalize_numeric_data(data, mean, std):
 
 # Get a batch so we can look at some example values.
 # The below values, means, standard deviations, normalization, etc comments all come from one of these batches, where the batch size was 5.
-example_batch = next(iter(input_dataset))[0]
+example_batch = next(iter(train_dataset))[0]
 
 # Take a look at the example batch.
 print('\n\nExample batch:')
@@ -122,7 +131,6 @@ pass_example_batch_through_feature_column(feature_column.indicator_column(featur
 # ]
 
 # Time feature (raw):
-print('\n\nTime feature (raw):')
 # [ 8,  5,  5, 16, 16]
 
 # Time feature (before normalization/preprocessing):
@@ -148,7 +156,6 @@ pass_example_batch_through_feature_column(feature_column.numeric_column('Time', 
 # ]
 
 # Sensor_ID feature (raw):
-print('\n\nSensor_ID feature (raw):')
 # [15, 12, 15, 11, 18]
 
 # Sensor_ID feature (before normalization/preprocessing):
@@ -173,6 +180,10 @@ pass_example_batch_through_feature_column(feature_column.numeric_column('Sensor_
 #   [-0.143]
 # ]
 
+print('\n\n')
+
+### Define the model ###
+
 # Now that we've decided how to send each feature through a feature column and preprocess it (map values, normalize numeric data, etc), create a DenseFeatures input layer to preprocess our inputs.
 preprocessing_layer = tf.keras.layers.DenseFeatures([
   #feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Day', ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])),
@@ -182,10 +193,10 @@ preprocessing_layer = tf.keras.layers.DenseFeatures([
 
 model = tf.keras.Sequential([
   preprocessing_layer,
-  tf.keras.layers.Dense(50, activation='relu'),
-  tf.keras.layers.Dense(50, activation='relu'),
-  tf.keras.layers.Dense(50, activation='relu'),
-  tf.keras.layers.Dense(1, activation='relu'),
+  tf.keras.layers.Dense(50, activation = 'relu'),
+  tf.keras.layers.Dense(50, activation = 'relu'),
+  tf.keras.layers.Dense(50, activation = 'relu'),
+  tf.keras.layers.Dense(1, activation = 'relu'),
 ])
 
 # Configure the model parameters.
@@ -195,12 +206,33 @@ model.compile(
   metrics = ['mean_absolute_error']
 )
 
-### Train the network ###
-model.fit(input_dataset, epochs=1)
+### Train the model ###
 
+model.fit(train_dataset, epochs=5)
+
+print('\n\nModel architecture:')
 model.summary()
 
-predictions = model.predict(example_batch)
+### Test the model ###
 
-print('\n\nPredictions:')
+test_data = {
+  'Day': ['Wednesday', 'Saturday', 'Sunday', 'Sunday', 'Tuesday', 'Saturday', 'Monday', 'Wednesday', 'Monday', 'Tuesday'],
+  'Time': [23, 0, 4, 15, 8, 10, 18, 4, 14, 9],
+  'Sensor_ID': [18, 18, 14, 13, 13, 17, 12, 2, 13, 1],
+  'labels': [61, 48, 76, 55, 5176, 211, 182, 14, 976, 1025]
+}
+
+test_dataset = build_dataset_from_dictionary(test_data)
+
+print('\n\nTest dataset:')
+show_dataset(test_dataset)
+print('\n\n')
+
+test_loss, test_metrics = model.evaluate(test_dataset)
+print('\n\nTest loss: ' + str(test_loss))
+print('Test metrics: ' + str(test_metrics))
+
+predictions = model.predict(test_dataset)
+
+print('\n\nPredictions for test dataset:')
 print(str(predictions))
