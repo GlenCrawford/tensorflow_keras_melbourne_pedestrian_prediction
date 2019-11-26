@@ -9,7 +9,7 @@ The dataset is updated monthly (the actual data frequency is hourly) and is very
 Here is the structure of the dataset, showing the header, first and last rows:
 
 | ID      | Date_Time              | Year | Month   | Mdate | Day      | Time | Sensor_ID | Sensor_Name                | Hourly_Counts |
-| ------- | ---------------------- | ---- | ------- | ----- | -------- | ---- | --------- | -------------------------- | ------------- |
+|:-------:|:----------------------:|:----:|:-------:|:-----:|:--------:|:----:|:---------:|:--------------------------:|:-------------:|
 | 1       | 05/01/2009 12:00:00 AM | 2009 | May     | 1     | Friday   | 0    | 1         | Bourke Street Mall (North) | 53            |
 | 2886663 | 10/31/2019 11:00:00 PM | 2019 | October | 31    | Thursday | 23   | 62        | La Trobe St (North)        | 100           |
 
@@ -18,6 +18,7 @@ The data is provided by the City of Melbourne, Australia, under the [Creative Co
 ## Requirements
 
 Python version: 3.7.4
+
 See dependencies.txt for packages and versions (and below to install).
 
 ## Architecture of the neural network
@@ -38,7 +39,7 @@ Install the dependencies:
 pip install -r dependencies.txt
 ```
 
-Download the [input data file](https://data.melbourne.vic.gov.au/Transport/Pedestrian-Counting-System-2009-to-Present-counts-/b2ak-trbp) into the root directoy.
+Download the [input data file](https://data.melbourne.vic.gov.au/Transport/Pedestrian-Counting-System-2009-to-Present-counts-/b2ak-trbp) into the root directory.
 
 ## Run
 
