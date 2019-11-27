@@ -46,3 +46,15 @@ Download the [input data file](https://data.melbourne.vic.gov.au/Transport/Pedes
 ```bash
 python main.py
 ```
+
+## Monitoring/logging
+
+After training, run:
+
+```
+$ tensorboard --logdir logs/fit
+Serving TensorBoard on localhost; to expose to the network, use a proxy or pass --bind_all
+TensorBoard 2.0.1 at http://localhost:6006/ (Press CTRL+C to quit)
+```
+
+Then open the above URL in your browser to view the model in TensorBoard.

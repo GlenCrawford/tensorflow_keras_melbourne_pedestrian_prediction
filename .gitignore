@@ -1,2 +1,7 @@
 # Ignore the dataset. See README for where to obtain it from.
 /Pedestrian_Counting_System___2009_to_Present__counts_per_hour_.csv
+
+# TensorBoard logging.
+/logs/fit/*
+
+!.gitkeep

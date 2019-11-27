@@ -4,6 +4,7 @@ from tensorflow import feature_column
 
 import numpy as np
 import pandas as pd
+import datetime
 import functools
 
 ### Load the input data ###
@@ -14,6 +15,7 @@ INPUT_DATA_COLUMN_NAMES = ['ID', 'Date_Time', 'Year', 'Month', 'Mdate', 'Day', '
 INPUT_DATA_COLUMNS_TO_USE = ['Day', 'Time', 'Sensor_ID', 'Hourly_Counts']
 
 BATCH_SIZE = 5000
+LOG_DIRECTORY = 'logs/fit/' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
 
 # Make numpy values easier to read.
 np.set_printoptions(precision=3, suppress=True)
@@ -186,16 +188,14 @@ print('\n\n')
 
 # Now that we've decided how to send each feature through a feature column and preprocess it (map values, normalize numeric data, etc), create a DenseFeatures input layer to preprocess our inputs.
 preprocessing_layer = tf.keras.layers.DenseFeatures([
-  #feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Day', ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])),
+  feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Day', ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])),
   feature_column.numeric_column('Time', normalizer_fn = time_feature_normalizer),
   feature_column.numeric_column('Sensor_ID', normalizer_fn = sensor_id_feature_normalizer)
 ])
 
 model = tf.keras.Sequential([
   preprocessing_layer,
-  tf.keras.layers.Dense(50, activation = 'relu'),
-  tf.keras.layers.Dense(50, activation = 'relu'),
-  tf.keras.layers.Dense(50, activation = 'relu'),
+  tf.keras.layers.Dense(5, activation = 'relu'),
   tf.keras.layers.Dense(1, activation = 'relu'),
 ])
 
@@ -208,7 +208,11 @@ model.compile(
 
 ### Train the model ###
 
-model.fit(train_dataset, epochs=5)
+model.fit(
+  train_dataset,
+  epochs=5,
+  callbacks = [tf.keras.callbacks.TensorBoard(log_dir = LOG_DIRECTORY)]
+)
 
 print('\n\nModel architecture:')
 model.summary()
