@@ -14,7 +14,11 @@ INPUT_DATA_PATH = 'Pedestrian_Counting_System___2009_to_Present__counts_per_hour
 INPUT_DATA_COLUMN_NAMES = ['ID', 'Date_Time', 'Year', 'Month', 'Mdate', 'Day', 'Time', 'Sensor_ID', 'Sensor_Name', 'Hourly_Counts']
 INPUT_DATA_COLUMNS_TO_USE = ['Day', 'Time', 'Sensor_ID', 'Hourly_Counts']
 
-BATCH_SIZE = 5000
+DAY_COLUMN_CATEGORIES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+TIME_COLUMN_CATEGORIES = list(range(0, 24)) # 0 to 23.
+SENSOR_ID_COLUMN_CATEGORIES = list(range(1, 63)) # 1 to 62.
+
+BATCH_SIZE = 500
 LOG_DIRECTORY = 'logs/fit/' + datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
 
 # Make numpy values easier to read.
@@ -66,7 +70,7 @@ def pass_example_batch_through_feature_column(feature_column):
   feature_layer = tf.keras.layers.DenseFeatures(feature_column)
   print(feature_layer(example_batch).numpy())
 
-# Function to normalize the numeric data based on the mean and standard deviation of the relevant column (calculated below).
+# Function to normalize numeric data based on the mean and standard deviation of the relevant column.
 def normalize_numeric_data(data, mean, std):
   return (data-mean) / std
 
@@ -86,6 +90,7 @@ print(str(example_batch))
 # Use Pandas to summarize the mean, standard deviation, etc of the numeric columns.
 # Uncomment bit at the end to make it more readable (ie, remove exponent notation).
 # Note that this isn't *good*, since we're loading the input data twice, but it'll do for learning.
+# Also note that in the end, I ended up treating these two features as categorical rather than numerical, so this is a bit redundant. But left it in in case it's useful later on.
 input_data_statistical_summary = pd.read_csv(INPUT_DATA_PATH)[['Time', 'Sensor_ID']].describe()#.apply(lambda s: s.apply(lambda x: format(x, 'g')))
 
 # Output of input_data_statistical_summary:
@@ -119,11 +124,11 @@ sensor_id_feature_normalizer = functools.partial(normalize_numeric_data, mean=SE
 
 # Day feature (raw):
 # [b'Tuesday', b'Sunday', b'Friday', b'Tuesday', b'Thursday']
-# This is a "categorical" column, where the values are from a finite (small) set, but we don't want to be passing in the days of the week as strings.
 
-# Day feature (after preprocessing):
+# Day feature (preprocessed):
+# Categorical feature, use one-hot encoding.
 print('\n\nDay feature (preprocessed):')
-pass_example_batch_through_feature_column(feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Day', ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])))
+pass_example_batch_through_feature_column(feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Day', DAY_COLUMN_CATEGORIES)))
 # [
 #   [0. 1. 0. 0. 0. 0. 0.]
 #   [0. 0. 0. 0. 0. 0. 1.]
@@ -135,51 +140,31 @@ pass_example_batch_through_feature_column(feature_column.indicator_column(featur
 # Time feature (raw):
 # [ 8,  5,  5, 16, 16]
 
-# Time feature (before normalization/preprocessing):
-print('\n\nTime feature (before normalization/preprocessing):')
-pass_example_batch_through_feature_column(feature_column.numeric_column('Time'))
+# Time feature (preprocessed):
+# Categorical feature, use one-hot encoding.
+print('\n\nTime feature (preprocessed):')
+pass_example_batch_through_feature_column(feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Time', TIME_COLUMN_CATEGORIES)))
 # [
-#   [ 8.]
-#   [ 5.]
-#   [ 5.]
-#   [16.]
-#   [16.]
-# ]
-
-# Time feature (after normalization/preprocessing):
-print('\n\nTime feature (after normalization/preprocessing):')
-pass_example_batch_through_feature_column(feature_column.numeric_column('Time', normalizer_fn = time_feature_normalizer))
-# [
-#   [-0.5  ]
-#   [-1.   ]
-#   [-1.   ]
-#   [ 0.833]
-#   [ 0.833]
+#   [0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+#   [0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+#   [0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+#   [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0.]
+#   [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0.]
 # ]
 
 # Sensor_ID feature (raw):
 # [15, 12, 15, 11, 18]
 
-# Sensor_ID feature (before normalization/preprocessing):
-print('\n\nSensor_ID feature (before normalization/preprocessing):')
-pass_example_batch_through_feature_column(feature_column.numeric_column('Sensor_ID'))
+# Sensor_ID feature (preprocessed):
+# Categorical feature, use one-hot encoding.
+print('\n\nSensor_ID feature (preprocessed):')
+pass_example_batch_through_feature_column(feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Sensor_ID', SENSOR_ID_COLUMN_CATEGORIES)))
 # [
-#   [15.]
-#   [12.]
-#   [15.]
-#   [11.]
-#   [18.]
-# ]
-
-# Sensor_ID feature (after normalization/preprocessing):
-print('\n\nSensor_ID feature (after normalization/preprocessing):')
-pass_example_batch_through_feature_column(feature_column.numeric_column('Sensor_ID', normalizer_fn = sensor_id_feature_normalizer))
-# [
-#   [-0.357]
-#   [-0.571]
-#   [-0.357]
-#   [-0.643]
-#   [-0.143]
+#   [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+#   [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+#   [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+#   [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+#   [0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
 # ]
 
 print('\n\n')
@@ -188,20 +173,20 @@ print('\n\n')
 
 # Now that we've decided how to send each feature through a feature column and preprocess it (map values, normalize numeric data, etc), create a DenseFeatures input layer to preprocess our inputs.
 preprocessing_layer = tf.keras.layers.DenseFeatures([
-  feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Day', ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])),
-  feature_column.numeric_column('Time', normalizer_fn = time_feature_normalizer),
-  feature_column.numeric_column('Sensor_ID', normalizer_fn = sensor_id_feature_normalizer)
+  feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Day', DAY_COLUMN_CATEGORIES)),
+  feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Time', TIME_COLUMN_CATEGORIES)),
+  feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Sensor_ID', SENSOR_ID_COLUMN_CATEGORIES))
 ])
 
 model = tf.keras.Sequential([
   preprocessing_layer,
-  tf.keras.layers.Dense(5, activation = 'relu'),
+  tf.keras.layers.Dense(60, activation = 'relu'),
   tf.keras.layers.Dense(1, activation = 'relu'),
 ])
 
 # Configure the model parameters.
 model.compile(
-  optimizer = 'adam',
+  optimizer = keras.optimizers.SGD(learning_rate = 1),
   loss = 'mean_absolute_error',
   metrics = ['mean_absolute_error']
 )
@@ -210,7 +195,7 @@ model.compile(
 
 model.fit(
   train_dataset,
-  epochs=5,
+  epochs = 5,
   callbacks = [tf.keras.callbacks.TensorBoard(log_dir = LOG_DIRECTORY)]
 )
 
@@ -219,14 +204,12 @@ model.summary()
 
 ### Test the model ###
 
-test_data = {
+test_dataset = build_dataset_from_dictionary({
   'Day': ['Wednesday', 'Saturday', 'Sunday', 'Sunday', 'Tuesday', 'Saturday', 'Monday', 'Wednesday', 'Monday', 'Tuesday'],
   'Time': [23, 0, 4, 15, 8, 10, 18, 4, 14, 9],
   'Sensor_ID': [18, 18, 14, 13, 13, 17, 12, 2, 13, 1],
   'labels': [61, 48, 76, 55, 5176, 211, 182, 14, 976, 1025]
-}
-
-test_dataset = build_dataset_from_dictionary(test_data)
+})
 
 print('\n\nTest dataset:')
 show_dataset(test_dataset)
