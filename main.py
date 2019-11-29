@@ -175,7 +175,8 @@ print('\n\n')
 preprocessing_layer = tf.keras.layers.DenseFeatures([
   feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Day', DAY_COLUMN_CATEGORIES)),
   feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Time', TIME_COLUMN_CATEGORIES)),
-  feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Sensor_ID', SENSOR_ID_COLUMN_CATEGORIES))
+  # feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Sensor_ID', SENSOR_ID_COLUMN_CATEGORIES))
+  feature_column.embedding_column(feature_column.categorical_column_with_vocabulary_list('Sensor_ID', SENSOR_ID_COLUMN_CATEGORIES), dimension = 8)
 ])
 
 model = tf.keras.Sequential([
