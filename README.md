@@ -15,7 +15,17 @@ Here is the structure of the dataset, showing the header, first and last rows:
 
 The data is provided by the City of Melbourne, Australia, under the [Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/legalcode). I do not include the data in this repository (it's in the `.gitignore` file), you can download it [here](https://data.melbourne.vic.gov.au/Transport/Pedestrian-Counting-System-2009-to-Present-counts-/b2ak-trbp).
 
-The current mean absolute error of the model after training is around 92. The goal was to get it below 100, so mission accomplished! Still experimenting on how to get the loss down further.
+The current mean absolute error of the model after training is in the 50s. The goal was to get it below 100, so mission accomplished!
+
+By the way, I'm aware that a neural network isn't really the best tool for this job; one might be better off just doing it with a simple SQL query like the following. It's just that this is a big dataset that I have had my eye on for a while and have been looking for an excuse to play with ;)
+
+```
+melbourne_pedestrian_sensor_counts=# SELECT AVG(Hourly_Counts) AS prediction FROM melbourne_pedestrian_sensor_counts WHERE Day = 'Tuesday' AND Time = 8 AND Sensor_ID = 13;
+      prediction       
+-----------------------
+ 4828.8401937046004843
+(1 row)
+```
 
 ## Requirements
 
@@ -27,9 +37,13 @@ See dependencies.txt for packages and versions (and below to install).
 
 ### Data preprocessing
 
-This program uses Tensorflow's `tf.feature_column` API to preprocess data. This means that instead of preprocessing data _before_ passing it into the model (for example, to map day of the week strings such as Monday, Tuesday, Wednesday, etc to something more usable), the input data is mapped _inside_ the model, using a "DenseFeatures" layer made up of "feature columns" that map and normalize data. As a result of the preprocessing being done inside the model, it is included when exporting the trained model, and subsequent raw data can be passed directly into the model, rather than preprocessed beforehand.
+This program uses Tensorflow's `tf.feature_column` API to preprocess data. This means that instead of preprocessing data _before_ passing it into the model (for example, to map day of the week strings such as Monday, Tuesday, Wednesday, etc to something more usable), the input data is mapped _inside_ the model, using a "DenseFeatures" layer made up of "feature columns" that map and normalize data. As a result of the preprocessing being done inside the model, the feature mapping layer is included when exporting the trained model, and subsequent raw data can be passed directly into the model, rather than preprocessed beforehand.
 
-TODO: More details about the architecture when it is finalized.
+__Input layer:__ The above-mentioned DenseFeatures layer that handles the preprocessing of three features (`Day`, `Time`, `Sensor_ID`), all input through indicator colunns with one-hot encoding.
+
+__One hidden layer:__ 60 neurons.
+
+__Output layer:__ 1 neuron, with the value being the prediction of the model.
 
 ## Setup
 

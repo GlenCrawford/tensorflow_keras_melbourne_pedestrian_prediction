@@ -26,14 +26,14 @@ np.set_printoptions(precision=3, suppress=True)
 
 # Load the input CSV file into a tf.data Dataset.
 # Each item in the returned dataset is a batch of the specified size, each batch being a tuple of (many input features, many labels).
-# The features are a dictionary mapping CSV column names to Tensors containing the batch's data data in the corresponding column.
+# The features are a dictionary mapping CSV column names to Tensors containing the batch's data in the corresponding column.
 # The labels are a Tensor containing the labels for the features in the batch.
 def load_dataset():
   return tf.data.experimental.make_csv_dataset(
     INPUT_DATA_PATH,
     batch_size = BATCH_SIZE,
     header = True, # Exclude the header row.
-    shuffle=True, # Randomize the rows.
+    shuffle = True, # Randomize the rows.
     label_name = 'Hourly_Counts',
     na_value = '?',
     num_epochs = 1,
@@ -72,7 +72,7 @@ def pass_example_batch_through_feature_column(feature_column):
 
 # Function to normalize numeric data based on the mean and standard deviation of the relevant column.
 def normalize_numeric_data(data, mean, std):
-  return (data-mean) / std
+  return (data - mean) / std
 
 # Get a batch so we can look at some example values.
 # The below values, means, standard deviations, normalization, etc comments all come from one of these batches, where the batch size was 5.
@@ -117,8 +117,8 @@ print('Sensor_ID mean: ' + str(SENSOR_ID_MEAN))
 print('Sensor_ID std: ' + str(SENSOR_ID_STD))
 
 # Build normalizer functions that the numeric feature columns will use to normalize their values.
-time_feature_normalizer = functools.partial(normalize_numeric_data, mean=TIME_MEAN, std=TIME_STD)
-sensor_id_feature_normalizer = functools.partial(normalize_numeric_data, mean=SENSOR_ID_MEAN, std=SENSOR_ID_STD)
+time_feature_normalizer = functools.partial(normalize_numeric_data, mean = TIME_MEAN, std = TIME_STD)
+sensor_id_feature_normalizer = functools.partial(normalize_numeric_data, mean = SENSOR_ID_MEAN, std = SENSOR_ID_STD)
 
 # Now let's go through a batch (where batch size is 5) and look at each of the features and their values, and test feature columns to preprocess them.
 
@@ -175,8 +175,7 @@ print('\n\n')
 preprocessing_layer = tf.keras.layers.DenseFeatures([
   feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Day', DAY_COLUMN_CATEGORIES)),
   feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Time', TIME_COLUMN_CATEGORIES)),
-  # feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Sensor_ID', SENSOR_ID_COLUMN_CATEGORIES))
-  feature_column.embedding_column(feature_column.categorical_column_with_vocabulary_list('Sensor_ID', SENSOR_ID_COLUMN_CATEGORIES), dimension = 8)
+  feature_column.indicator_column(feature_column.categorical_column_with_vocabulary_list('Sensor_ID', SENSOR_ID_COLUMN_CATEGORIES))
 ])
 
 model = tf.keras.Sequential([
@@ -203,7 +202,7 @@ model.fit(
 print('\n\nModel architecture:')
 model.summary()
 
-### Test the model ###
+### Test the model with 10 random rows from the dataset ###
 
 test_dataset = build_dataset_from_dictionary({
   'Day': ['Wednesday', 'Saturday', 'Sunday', 'Sunday', 'Tuesday', 'Saturday', 'Monday', 'Wednesday', 'Monday', 'Tuesday'],
